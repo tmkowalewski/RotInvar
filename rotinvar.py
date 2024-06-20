@@ -23,8 +23,6 @@ def formatValue(value, errl, erru):
         return f"{value}({str(errl).replace('.','').replace('0','')[0]})"
     else:
         return f"{value}_{{-{errl:.{precision}f}}}^{{+{erru:0.{precision}f}}}"
-    
-formatValue(0.02, 0.5, 1.0)
 
 
 class Level():
