@@ -6,7 +6,25 @@
 
 import numpy as np
 import re
-from sympy.physics.wigner import wigner_6j as w6J 
+from sympy.physics.wigner import wigner_6j as w6J
+
+def formatValue(value, errl, erru):
+    # formats value and errors for LaTeX table entry
+
+    if errl == 0 and erru == 0:
+        return str(value)
+    
+    precision = max(-int(np.floor(np.log10(errl))), -int(np.floor(np.log10(erru))))
+    
+    value = round(value, precision)
+    errl = round(errl, precision)
+    erru = round(erru, precision)
+    if errl == erru:
+        return f"{value}({str(errl).replace('.','').replace('0','')[0]})"
+    else:
+        return f"{value}_{{-{errl:.{precision}f}}}^{{+{erru:0.{precision}f}}}"
+    
+formatValue(0.02, 0.5, 1.0)
 
 
 class Level():
@@ -32,6 +50,17 @@ class Level():
     def __str__(self) -> str:
         
         return "{0}{1}{2}".format(self.spin,('+' if self.parity == 1 else '-'),self.rindex)
+    
+    def toLatex(self) -> str:
+
+        spin_str = -1
+
+        if (self.spin.is_integer()):
+            spin_str = str(int(self.spin))
+        elif ((2*self.spin).is_integer()):
+            spin_str = "\\frac{%i}{2}" % (int(self.spin*2))
+
+        return "${0}^{1}_{2}$".format(spin_str,"+" if self.parity == 1 else "-", str(self.rindex))
 
 
 class Transition():
@@ -48,12 +77,26 @@ class Transition():
         self.gindex = gindex                                                # index GOSIA gives to the transition
 
         return
+    
+    def getBE2(self) -> float:
+            
+            return 1/(2*self.level_i.spin + 1)*self.elements['E2']**2
+    
+    def calcQsp(self) -> float:
+
+        if (self.level_i == self.level_f):
+
+            return self.elements['E2']/(np.sqrt(16*np.pi/5*(self.level_i.spin*(2*self.level_i.spin-1))/((2*self.level_i.spin+1)*(self.level_i.spin+1)*(2*self.level_i.spin+3))))
+        
+        else:
+            
+            print("Error: Only diagonal transitions have a value for Qsp.".format(str(self)))
 
     def __str__(self) -> str:
         
         return str(self.level_i) + '->' + str(self.level_f)
     
-    def __repr__(self) -> str:
+    def toLatex(self) -> str:
 
         spins = [self.level_i.spin,self.level_f.spin]
 
@@ -65,7 +108,7 @@ class Transition():
             else:
                 raise Exception("Invalid spin value. Must be integer or half-integer.")
         
-        return "{0}^{1}_{2}".format(spins[0],"+" if self.level_i.parity == 1 else "-", self.level_i.rindex) + '\\to' + "{0}^{1}_{2}".format(spins[1],"+" if self.level_f.parity == 1 else "-", self.level_f.rindex)
+        return "${0}^{1}_{2}".format(spins[0],"+" if self.level_i.parity == 1 else "-", self.level_i.rindex) + '\\to' + "{0}^{1}_{2}$".format(spins[1],"+" if self.level_f.parity == 1 else "-", self.level_f.rindex)
 
 
 class LevelScheme():
@@ -110,9 +153,9 @@ class LevelScheme():
         if (match == None):
             match = next((transition for transition in self.transitions if (transition.level_f == level_i and transition.level_i == level_f)), None)
 
-        #if (match == None):
+        if (match == None):
 
-            #print("Warn: getTransitionByLevels didn't find {0}<->{1}, returning 'None' instead (matrix element = 0).".format(str(level_f),str(level_i)))
+            print("Warn: getTransitionByLevels didn't find {0}<->{1} in {2}".format(str(level_f),str(level_i),self.filename))
         
         return match
 
@@ -180,6 +223,8 @@ class LevelScheme():
                         transition = Transition(level_f, level_i, gamma_en = gamma_en, branch_ratio = branch_ratio, delta = delta)
                         
                         self.transitions.append(transition)
+
+                        #print("Transition from {0} to {1} added to level scheme.".format(str(level_i),str(level_f)))
                     
                 # Substate transitions not listed in deo, so we add them here
                 for level in self.levels:
@@ -211,8 +256,12 @@ class LevelScheme():
                         level_i = self.getLevelByIpiN(spin_i,parity_i,rindex_i)
                         level_f = self.getLevelByIpiN(spin_f,parity_f,rindex_f)
 
-                        transition = self.getTransitionByLevels(level_f,level_i)
-                        transition.elements[pole] = value
+                        try:
+                            transition = self.getTransitionByLevels(level_f,level_i)
+                            transition.elements[pole] = value
+                        except:
+                            print("Error: Transition from {0} to {1} not found in level scheme.".format(str(level_i),str(level_f)))
+                            continue
 
         elif (filetype == "GOSIA"):       # GOSIA sum rules filetype: name.smr
 
@@ -289,7 +338,7 @@ class LevelScheme():
 
     def invarByIPiN(self, spin:float, parity:int, rindex:int, invar:str, J:int = 0) -> float:
 
-        # invar values: Q2, Q3, Q4(0), Q4(2), Q4(4), Q5, Q(6)(0), Q6(2), Q6(4)
+        # invar values: Q2, Q3, Q4(0), Q4(2), Q4(4), Q5, Q(6)(0), Q6(2), Q6(4), cos3d
         #               Q3cos3d, Q5cos3d(0), Q5cos3d(2), Q5cos3d(4)
         #               cos23d(1), cos23d(2), cos23d(3)
 
@@ -394,6 +443,10 @@ class LevelScheme():
 
             return float(C(J_val)*vL @ ST(J_val).T @ Tp() @ S(J_val) @ vR)
         
+        def cos3d() -> float:
+
+            return float(Q3cos3d()/Q3())
+
         def Q3cos3d() -> float: # (Gosia Manual 9.29b)
 
             return (-1)**(level.spin.is_integer())*np.sqrt(35/2)*1/(2*level.spin + 1)*vL @ S(2) @ vR
@@ -439,6 +492,10 @@ class LevelScheme():
         elif (invar == 'Q6'):
             
             return Q6(J)
+        
+        elif (invar == 'cos3d'):
+
+            return cos3d()
         
         elif (invar == 'Q3cos3d'):
 
