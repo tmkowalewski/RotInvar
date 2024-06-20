@@ -68,7 +68,7 @@ class Transition():
         
         self.level_f = level_f
         self.level_i = level_i
-        self.elements = ({"M1":0., "E2":0.} if not elements else elements)  # dict of elements in mu_0, e*b, key corresponds to multipole
+        self.elements = ({"E1":0., "E2":0., "E3":0., "M1":0.} if not elements else elements)  # dict of elements in mu_0, e*b, key corresponds to multipole
         self.gamma_en = gamma_en                                            # in MeV
         self.branch_ratio = branch_ratio                                    # absolute ratio
         self.delta = delta
@@ -118,14 +118,13 @@ class LevelScheme():
         self.levels = levels
         self.transitions = transitions
 
-        self.readFromFile(self.filename, self.filetype)
+        return
+    
+    def setLevelsSorted(self) -> list:
 
         self.levels_sorted = sorted(self.levels, key=lambda level: level.energy)
         for i in range(len(self.levels_sorted)):
-
             self.levels_sorted[i].nindex = i
-
-        return
     
     def getLevelByIpiN(self, spin:float, parity:int, rindex:int) -> Level:
         
@@ -328,6 +327,8 @@ class LevelScheme():
         else:
 
             raise Exception("Invalid filetype. Valid filetypes are 'NuShellX' (name.dei, name.deo) and 'GOSIA' (name.smr).")
+
+        self.setLevelsSorted()
 
         print("Level Scheme read from file! It is shown below.")
         print(str(self))
