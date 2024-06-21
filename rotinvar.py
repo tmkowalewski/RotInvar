@@ -10,12 +10,22 @@ from sympy.physics.wigner import wigner_6j as w6J
 def formatValue(value, errl, erru):
     # formats value and errors for LaTeX table entry
 
+    # make sure errors are positive
+    errl = abs(errl)
+    erru = abs(erru)
+
     if errl == 0 and erru == 0:
         return str(value)
     
-    precision = max(-int(np.floor(np.log10(errl))), -int(np.floor(np.log10(erru))))
+    def safe_precision(error):
+        if error == 0:
+            return 0  # Default precision for 0 error
+        else:
+            return -int(np.floor(np.log10(error)))
+
+    precision = max(safe_precision(errl), safe_precision(erru))
     
-    value = round(value, precision)
+    value = (round(value, precision) if round(value, precision) != 0 else round(0, precision))
     errl = round(errl, precision)
     erru = round(erru, precision)
     if errl == erru:
