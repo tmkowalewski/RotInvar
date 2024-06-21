@@ -11,6 +11,10 @@ from sympy.physics.wigner import wigner_6j as w6J
 def formatValue(value, errl, erru):
     # formats value and errors for LaTeX table entry
 
+    # make sure errors are positive
+    errl = abs(errl)
+    erru = abs(erru)
+
     if errl == 0 and erru == 0:
         return str(value)
     
