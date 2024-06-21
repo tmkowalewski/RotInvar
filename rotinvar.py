@@ -25,7 +25,7 @@ def formatValue(value, errl, erru):
 
     precision = max(safe_precision(errl), safe_precision(erru))
     
-    value = (round(value, precision) if round(value, precision) != 0 else round(0, precision))
+    value = (round(value, precision) if round(value, precision) != 0 else f"{0:.{precision}f}") # get correct precision when reporting 0
     errl = round(errl, precision)
     erru = round(erru, precision)
     if errl == erru:
