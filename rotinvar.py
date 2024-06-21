@@ -33,7 +33,7 @@ class Level():
 
         self.energy  = energy       # in MeV
         self.spin = spin            
-        self.parity = parity        # 1 for positive, -1 for negative
+        self.parity = parity        # 0 for positive, 1 for negative
         self.rindex = rindex        # level notation 2^+_1 <=> spin^parity_rindex
         self.gindex = gindex        # index as assigned by gosia
         self.nindex = nindex        # index as assigned by level energy
@@ -47,7 +47,7 @@ class Level():
     
     def __str__(self) -> str:
         
-        return "{0}{1}{2}".format(self.spin,('+' if self.parity == 1 else '-'),self.rindex)
+        return "{0}{1}{2}".format(self.spin,('+' if self.parity == 0 else '-'),self.rindex)
     
     def toLatex(self) -> str:
 
@@ -58,7 +58,7 @@ class Level():
         elif ((2*self.spin).is_integer()):
             spin_str = "\\frac{%i}{2}" % (int(self.spin*2))
 
-        return "${0}^{1}_{2}$".format(spin_str,"+" if self.parity == 1 else "-", str(self.rindex))
+        return "${0}^{1}_{2}$".format(spin_str,"+" if self.parity == 0 else "-", str(self.rindex))
 
 
 class Transition():
@@ -106,7 +106,7 @@ class Transition():
             else:
                 raise Exception("Invalid spin value. Must be integer or half-integer.")
         
-        return "${0}^{1}_{2}".format(spins[0],"+" if self.level_i.parity == 1 else "-", self.level_i.rindex) + '\\to' + "{0}^{1}_{2}$".format(spins[1],"+" if self.level_f.parity == 1 else "-", self.level_f.rindex)
+        return "${0}^{1}_{2}".format(spins[0],"+" if self.level_i.parity == 0 else "-", self.level_i.rindex) + '\\to' + "{0}^{1}_{2}$".format(spins[1],"+" if self.level_f.parity == 0 else "-", self.level_f.rindex)
 
 
 class LevelScheme():
@@ -191,7 +191,7 @@ class LevelScheme():
 
                         energy = float(fields[0])
                         spin = float(fields[1][0])
-                        parity = int((1 if fields[1][1] == '+' else -1))
+                        parity = int((0 if fields[1][1] == '+' else 1))
                         rindex = int(fields[2])
                         lifetime = float(fields[3])/(np.log(2))             # listed at T_1/2, need to convert to lifetime
                         width = float(fields[4])
@@ -206,7 +206,7 @@ class LevelScheme():
 
                         energy_f = float(fields[0])
                         spin_f = float(fields[1][:-1])
-                        parity_f = int((1 if fields[1][-1] == '+' else -1))
+                        parity_f = int((0 if fields[1][-1] == '+' else 1))
                         rindex_f = float(fields[2])
                         branch_ratio = float(fields[3])
                         gamma_en = float(fields[4])
@@ -243,8 +243,8 @@ class LevelScheme():
                         pole = ('M1' if int(fields[7]) == 1 else 'E2')  # only handles M1 and E2, may need to update
                         rindex_i = int(fields[8])
                         rindex_f = int(fields[9])
-                        parity_i = int(fields[10])
-                        parity_f = int(fields[11])
+                        parity_i = (0 if int(fields[10]) == 1 else 1) # positive parity is 0, negative is 1, dei file has 1 for positive and -1 for negative
+                        parity_f = (0 if int(fields[11]) == 1 else 1) # positive parity is 0, negative is 1, dei file has 1 for positive and -1 for negative
 
                         #skip invalid first line of dei file and go to next line
                         if (parity_i == 0 and parity_f == 0): continue
@@ -279,7 +279,7 @@ class LevelScheme():
 
                     gindex = int(fields[0])
                     spin = float(fields[1])
-                    parity = int(1)                  # not given, so set to positive; spin, gindex uniquely defines level
+                    parity = int(0)                  # not given, so set to positive; spin, gindex uniquely defines level
                     energy = float(fields[2])
                     rindex_tracker[spin] = ((rindex_tracker[spin]+1) if (spin in rindex_tracker) else 1)
                     rindex = rindex_tracker[spin]
