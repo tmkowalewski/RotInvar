@@ -33,6 +33,19 @@ def formatValue(value, errl, erru):
     else:
         return f"{value}_{{-{errl:.{precision}f}}}^{{+{erru:0.{precision}f}}}"
 
+def weisskopfBML(ML:str, A:int):
+    # estimates Weisskopf unit for a given multipole and mass number
+    # returns in si units (e^2fm^2L for E, mu_N^2fm^(2L-2) for M)
+
+    if (ML not in ['M1','E1','E2','E3']):
+        raise Exception("Invalid multipole. Must be 'M1', 'E1', 'E2', or 'E3'.")
+
+    L = int(ML[1])
+
+    if (ML[0] == 'M'):
+        return 10/np.pi*(1.2)**(2*L-2)*(3/(L+3))**2*A**((2*L-2)/3)
+    elif (ML[0] == 'E'):
+        return (1.2)**(2*L)/(4*np.pi)*(3/(L+3))**2*A**(2*L/3)
 
 class Level():
 
@@ -85,9 +98,32 @@ class Transition():
 
         return
     
-    def getBE2(self) -> float:
-            
-            return 1/(2*self.level_i.spin + 1)*self.elements['E2']**2
+    def getBML(self, ML:str, type:str = 'd', units:str = 'si') -> float:
+
+        if (ML not in ['M1','E1','E2','E3']):
+            raise Exception("Invalid multipole. Must be 'M1', 'E1', 'E2', or 'E3'.")
+        L = int(ML[1])
+        BML = 1/(2*self.level_i.spin + 1)*self.elements[ML]**2
+
+        if (units == 'nat'):
+            pass
+        elif (units == 'si'):
+            if (ML == 'M1'):
+                BML *= 1.
+            else:
+                BML *= 100.**(L)
+        elif (units == 'weisskopf'):
+
+            BML /= weisskopfBML(ML, A=70) # A=70 is a placeholder, should be replaced with actual mass number
+
+        else:
+
+            raise Exception("Invalid units. Must be 'nat' (e.g. e^2b^(L/2) and mu^2b^(L-1)), 'si' (e.g. e^2fm^L and mu^2fm^(2L-2)), or 'weisskopf'.")
+        
+        if type == 'd':
+            return BML
+        elif type == 'x':
+            return BML*(2*self.level_i.spin + 1)/(2*self.level_f.spin + 1)
     
     def calcQsp(self) -> float:
 
