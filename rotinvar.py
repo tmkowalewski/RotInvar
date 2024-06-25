@@ -33,12 +33,13 @@ def formatValue(value, errl, erru):
     else:
         return f"{value}_{{-{errl:.{precision}f}}}^{{+{erru:0.{precision}f}}}"
 
+
 def weisskopfBML(ML:str, A:int):
     # estimates Weisskopf unit for a given multipole and mass number
     # returns in si units (e^2fm^2L for E, mu_N^2fm^(2L-2) for M)
 
-    if (ML not in ['M1','E1','E2','E3']):
-        raise Exception("Invalid multipole. Must be 'M1', 'E1', 'E2', or 'E3'.")
+    if (ML[0] not in ['M','E'] and int(ML[1:]) not in range(1,4)):
+        raise Exception("Invalid multipole. Must be (E)lectric or (M)agnetic with L=1,2,3.")
 
     L = int(ML[1])
 
@@ -46,6 +47,7 @@ def weisskopfBML(ML:str, A:int):
         return 10/np.pi*(1.2)**(2*L-2)*(3/(L+3))**2*A**((2*L-2)/3)
     elif (ML[0] == 'E'):
         return (1.2)**(2*L)/(4*np.pi)*(3/(L+3))**2*A**(2*L/3)
+
 
 class Level():
 
