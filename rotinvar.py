@@ -24,6 +24,7 @@ def formatValue(value, errl, erru):
             return -int(np.floor(np.log10(error)))
 
     precision = max(safe_precision(errl), safe_precision(erru))
+    if precision < 0: precision = 0  # Don't allow negative precision
     
     value = (round(value, precision) if round(value, precision) != 0 else f"{0:.{precision}f}") # get correct precision when reporting 0
     errl = round(errl, precision)
